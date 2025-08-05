@@ -15,8 +15,8 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from astmio.logging import get_logger
 from astmio.plugins import BasePlugin, PluginManager
+from astmio.plugins.logging import get_logger
 from astmio.plugins.records import PatientRecord
 
 log = get_logger(__name__)

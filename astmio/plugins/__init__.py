@@ -1,10 +1,12 @@
-import logging
 from typing import Dict, List, Optional, Type
 
-from .base import BasePlugin, PluginManager
+from astmio.plugins.logging.logger import get_logger
+
+from .base import BasePlugin
+from .manager import PluginManager
 from .registry import PluginRegistry
 
-log = logging.getLogger(__name__)
+log = get_logger(__name__)
 
 # This is our Singleton instance.
 registry = PluginRegistry()

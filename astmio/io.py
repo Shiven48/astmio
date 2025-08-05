@@ -11,9 +11,10 @@ try:
 except ImportError:
     toml = None
 
+from astmio.plugins.logging import get_logger
+
 from .enums import SerializationFormat
 from .exceptions import BaseASTMError, ConfigurationError, ValidationError
-from .logging import get_logger
 from .profile import DeviceProfile
 
 log = get_logger(__name__)

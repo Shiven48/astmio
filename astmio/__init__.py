@@ -16,7 +16,8 @@ from astmio.exceptions import (
     ProtocolError,
     ValidationError,
 )
-from astmio.logging import get_logger, setup_logging
+from astmio.plugins.logging import get_logger, setup_logging
+from astmio.plugins.logging.logger import StructlogPlugin
 from astmio.profile import DeviceProfile
 from astmio.server import Server, ServerConfig, astm_server
 from astmio.server import create_server as _create_server
@@ -135,7 +136,19 @@ def create_server(
 
     # Install plugins if specified
     if plugins:
-        for plugin in plugins:
+        # Finding the logging plugin
+        logging_plugins = [p for p in plugins if isinstance(p, StructlogPlugin)]
+        other_plugins = [
+            p for p in plugins if not isinstance(p, StructlogPlugin)
+        ]
+
+        # Installing the logging plugin first
+        if logging_plugins:
+            for plugin in logging_plugins:
+                server.install_plugin(plugin)
+
+        # Installing other plugins after the logging plugin
+        for plugin in other_plugins:
             server.install_plugin(plugin)
 
     # Load profile if specified

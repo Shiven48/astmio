@@ -8,6 +8,8 @@ from pydantic import (
     create_model,
 )
 
+from astmio.plugins.logging import get_logger
+
 from .field_mapper import (
     ComponentField,
     DateTimeField,
@@ -17,7 +19,6 @@ from .field_mapper import (
     RecordFieldMapping,
     StringField,
 )
-from .logging import get_logger
 from .models import RecordConfig
 from .modern_records import ASTMBaseRecord, RecordMetadata
 

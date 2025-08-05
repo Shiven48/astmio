@@ -2,8 +2,9 @@ import asyncio
 import time
 from typing import Any, Dict, Set
 
+from astmio.plugins.logging import get_logger
+
 from .client import Client
-from .logging import get_logger
 
 log = get_logger(__name__)
 

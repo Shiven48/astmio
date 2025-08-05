@@ -8,9 +8,9 @@ from typing import Any, Dict, List, Optional, Union
 from pydantic import BaseModel, Field, computed_field, model_validator
 
 from astmio.constants import ENCODING
+from astmio.plugins.logging import get_logger
 
 from .enums import ConnectionState, MessageType
-from .logging import get_logger
 
 log = get_logger(__name__)
 

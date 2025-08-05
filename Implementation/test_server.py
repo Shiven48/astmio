@@ -5,25 +5,30 @@ import logging
 
 import astmio
 from astmio.plugins import BasePlugin
+from astmio.plugins.logging import StructlogPlugin, get_logger
 from astmio.plugins.records import ASTMBaseRecord, ModernRecordsPlugin
-
-# from astmio.plugins.registry import _registry
 from astmio.server import Server
 
-# --- Configuration ---
-HOST, PORT = "localhost", 15200
-LOG_FORMAT = "%(asctime)s [%(levelname)-5.5s]  %(message)s"
-logging.basicConfig(level=logging.INFO, format=LOG_FORMAT)
+log = get_logger()
 
 
-# --- TestState Class (this is good) ---
 class TestState:
     received_records = []
     test_passed = True
     validation_failures = []
 
 
-# --- NEW: Create a custom plugin specifically for testing ---
+HOST, PORT = "localhost", 15200
+logging_config = {
+    "log_level": "INFO",
+    "log_to_console": False,
+    "log_to_file": True,
+    "info_log_path": "logs/server_info.log",
+    "error_log_path": "logs/server_error.log",
+    "log_to_db": False,
+}
+
+
 class TestAssertionPlugin(BasePlugin):
     """
     A simple plugin that hooks into the 'record_parsed' event to run
@@ -69,6 +74,7 @@ async def main():
         help="The name of the machine profile to load (e.g., 'bs240').",
     )
     args: argparse.Namespace = parser.parse_args()
+    logging_plugin = StructlogPlugin(**logging_config)
 
     logging.info(
         f"--- Initializing Test Harness Server for profile: {args.profile_name} ---"
@@ -93,14 +99,13 @@ async def main():
         return
 
     modern_records_plugin = ModernRecordsPlugin(enable_audit_trail=True)
-
     test_plugin = TestAssertionPlugin()
 
     server: Server = astmio.create_server(
         handlers=None,
         host=HOST,
         port=PORT,
-        plugins=[modern_records_plugin, test_plugin],
+        plugins=[modern_records_plugin, test_plugin, logging_plugin],
         profile=PROFILE_PATH,
         log_level="INFO",
     )

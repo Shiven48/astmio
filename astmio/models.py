@@ -2,9 +2,10 @@ from typing import Any, Dict, List, Literal, Optional
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
+from astmio.plugins.logging import get_logger
+
 from .exceptions import ConfigurationError
 from .field_mapper import DiscriminatedField
-from .logging import get_logger
 
 log = get_logger(__name__)
 

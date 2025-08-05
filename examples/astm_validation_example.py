@@ -20,10 +20,10 @@ from astmio.exceptions import BaseASTMError, NotAccepted
 
 # Import the modern, unified I/O function and custom exceptions
 from astmio.io import load_profile_from_file
+from astmio.modern_records import ASTMBaseRecord
 
 # Import the logger
-from astmio.logging import get_logger
-from astmio.modern_records import ASTMBaseRecord
+from astmio.plugins.logging import get_logger
 
 # Import the core models needed for type hinting and functionality
 from astmio.profile import DeviceProfile

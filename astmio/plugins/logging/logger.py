@@ -2,6 +2,7 @@ import logging
 import logging.config
 import sys
 from datetime import datetime
+from pathlib import Path
 
 import dataset
 import structlog
@@ -9,15 +10,97 @@ from sqlalchemy import JSON, TEXT
 from structlog.processors import JSONRenderer
 from structlog.types import EventDict, WrappedLogger
 
-# --- Structlog Configuration ---
+from astmio.plugins.base import BasePlugin
+
+
+class StructlogPlugin(BasePlugin):
+    """
+    A plugin to configure the application-wide structlog setup.
+    It encapsulates the existing setup_logging function.
+    """
+
+    name = "structlog_manager"
+    description = "Configures structlog with console, file, and DB handlers."
+
+    def __init__(self, **kwargs):
+        """
+        Initializes the plugin with configuration for setup_logging.
+
+        Args:
+            **kwargs: Arguments to be passed directly to setup_logging, e.g.,
+                      log_level="INFO", log_to_file=True, db_path="logs.db", etc.
+        """
+        # We don't call super().__init__() because we want to pass all kwargs
+        # directly to our config. BasePlugin's __init__ is simple enough to bypass.
+        self.config = kwargs
+        self.manager = None
+
+    def install(self, manager):
+        """
+        Called when the plugin is activated. This triggers the logging configuration.
+        """
+        super().install(manager)
+        logging.info("StructlogPlugin is activating. Configuring logging...")
+
+        if self.config.get("log_to_file"):
+            info_file = self.config.get("log_file_path")
+            if info_file:
+                Path(info_file).parent.mkdir(parents=True, exist_ok=True)
+
+            error_file = self.config.get("error_log_path")
+            if error_file:
+                Path(error_file).parent.mkdir(parents=True, exist_ok=True)
+
+        if self.config.get("log_to_db"):
+            db_file = self.config.get("db_path")
+            if db_file:
+                db_dir = Path(db_file).parent
+                db_dir.mkdir(parents=True, exist_ok=True)
+                logging.info(f"Ensured database directory exists: {db_dir}")
+
+        setup_logging(**self.config)
+
+        logging.info("Logging has been configured by StructlogPlugin.")
+
+    def uninstall(self, manager):
+        """
+        When the plugin is deactivated, we can reset the logging.
+        """
+        super().uninstall(manager)
+        logging.getLogger().handlers.clear()
+        logging.info("Logging handlers cleared by StructlogPlugin.")
+
+
+class LevelFilter(logging.Filter):
+    """
+    Filters log records based on a specific level.
+    Unlike the default level setting, this is an exact match.
+    """
+
+    def __init__(self, level):
+        super().__init__()
+        self.level = level
+
+    def filter(self, record):
+        return record.levelno == self.level
+
+
+class BelowLevelFilter(logging.Filter):
+    def __init__(self, max_level):
+        super().__init__()
+        self.max_level = max_level
+
+    def filter(self, record):
+        return record.levelno < self.max_level
 
 
 def setup_logging(
     log_level: str = "INFO",
     log_to_console: bool = True,
     log_to_file: bool = False,
+    info_log_path: str = "logs/info.log",
+    error_log_path: str = "logs/error.log",
     log_to_db: bool = False,
-    log_file_path: str = "astmio.log",
     db_path: str = "astmio_logs.db",
 ):
     """
@@ -62,6 +145,12 @@ def setup_logging(
     log_config = {
         "version": 1,
         "disable_existing_loggers": False,
+        "filters": {
+            "below_warning": {
+                "()": BelowLevelFilter,
+                "max_level": logging.WARNING,
+            }
+        },
         "formatters": {
             "console": {
                 "()": "structlog.stdlib.ProcessorFormatter",
@@ -92,14 +181,28 @@ def setup_logging(
         log_config["loggers"][""]["handlers"].append("console")
 
     if log_to_file:
-        log_config["handlers"]["file"] = {
+        log_config["handlers"]["info_file"] = {
             "class": "logging.handlers.RotatingFileHandler",
-            "filename": log_file_path,
-            "maxBytes": 10485760,  # 10MB
-            "backupCount": 5,
+            "filename": info_log_path,
+            "maxBytes": 5 * 1024 * 1024,  # 5MB
+            "backupCount": 3,
             "formatter": "json",
+            "level": "INFO",  # This handler only cares about INFO and above
+            "filters": [
+                "below_warning"
+            ],  # CRITICAL: Only log records BELOW WARNING
         }
-        log_config["loggers"][""]["handlers"].append("file")
+        log_config["loggers"][""]["handlers"].append("info_file")
+
+        log_config["handlers"]["error_file"] = {
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": error_log_path,
+            "maxBytes": 5 * 1024 * 1024,  # 5MB
+            "backupCount": 3,
+            "formatter": "json",
+            "level": "WARNING",  # This handler only cares about WARNING and above
+        }
+        log_config["loggers"][""]["handlers"].append("error_file")
 
     if log_to_db:
         log_config["handlers"]["sqlite"] = {
@@ -112,12 +215,10 @@ def setup_logging(
     logging.config.dictConfig(log_config)
 
 
-# --- Custom Processors and Handlers ---
-
-
 class DataMaskingProcessor:
     """
     A structlog processor to mask sensitive data in log records.
+    (Your full class code from logging.py goes here)
     """
 
     SENSITIVE_KEYS = {"password", "patient_id", "secret"}
@@ -143,7 +244,9 @@ class DataMaskingProcessor:
 
 class SQLiteHandler(logging.Handler):
     """
+
     A logging handler that writes log records to a SQLite database.
+    (Your full class code from logging.py goes here)
     """
 
     def __init__(self, db_path: str = "astmio_logs.db"):
@@ -237,11 +340,6 @@ class SQLiteHandler(logging.Handler):
 def get_logger(name: str = None) -> WrappedLogger:
     """
     Returns a structlog logger.
-
-    Args:
-        name (str): The name of the logger.
-
-    Returns:
-        A structlog logger instance.
+    (Your full function code from logging.py goes here)
     """
     return structlog.get_logger(name)

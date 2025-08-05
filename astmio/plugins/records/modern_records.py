@@ -1,7 +1,3 @@
-#
-# Modern Pydantic-based ASTM record definitions as a plugin
-#
-
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import (
@@ -23,8 +19,8 @@ from astmio.field_mapper import (
     DateTimeField,
     RecordFieldMapping,
 )
-from astmio.logging import get_logger
 from astmio.plugins import BasePlugin, PluginManager
+from astmio.plugins.logging import get_logger
 
 if TYPE_CHECKING:
     from astmio.models import RecordConfig

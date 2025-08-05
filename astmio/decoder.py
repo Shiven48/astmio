@@ -10,7 +10,7 @@ from typing import Any, Iterator, List, Optional, Tuple, Union
 from astmio.dataclasses import DecodingResult, MessageType
 from astmio.enums import ErrorCode
 from astmio.exceptions import ProtocolError, ValidationError
-from astmio.logging import get_logger
+from astmio.plugins.logging import get_logger
 from astmio.utils import is_chunked_message, make_checksum
 
 from .constants import (

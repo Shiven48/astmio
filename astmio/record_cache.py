@@ -1,7 +1,7 @@
 from typing import Dict
 
 from astmio.dataclasses import RecordConfig
-from astmio.logging import get_logger
+from astmio.plugins.logging import get_logger
 
 log = get_logger(__name__)
 

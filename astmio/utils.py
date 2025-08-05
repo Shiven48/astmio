@@ -9,9 +9,10 @@ from datetime import datetime
 from itertools import zip_longest
 from typing import Iterable, Iterator, List
 
+from astmio.plugins.logging import get_logger
+
 from .constants import CR, CRLF, ETB, ETX, STX
 from .exceptions import ValidationError
-from .logging import get_logger
 
 log = get_logger(__name__)
 

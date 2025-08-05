@@ -1,5 +1,5 @@
-from astmio.logging import get_logger
 from astmio.plugins import BasePlugin
+from astmio.plugins.logging import get_logger
 from astmio.plugins.registry import register_plugin
 
 log = get_logger(__name__)

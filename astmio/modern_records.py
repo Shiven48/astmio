@@ -4,8 +4,8 @@
 
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type
 
-from astmio.logging import get_logger
 from astmio.plugins import get_default_manager
+from astmio.plugins.logging import get_logger
 
 if TYPE_CHECKING:
     from astmio.models import RecordConfig

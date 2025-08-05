@@ -25,7 +25,6 @@ from astmio.constants import ENCODING, RECORD_SEP
 from astmio.decoder import decode_frame
 from astmio.exceptions import BaseASTMError, NotAccepted
 from astmio.io import load_profile_from_file
-from astmio.logging import get_logger
 from astmio.modern_records import ASTMBaseRecord
 
 # Plugin system imports
@@ -36,6 +35,7 @@ from astmio.plugins import (
     list_available_plugins,
     print_plugin_catalog,
 )
+from astmio.plugins.logging import get_logger
 from astmio.plugins.registry import (
     get_plugin_info,
 )

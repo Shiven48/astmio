@@ -1,8 +1,7 @@
 from typing import Any, Dict, Union
 
 from astmio.exceptions import ConfigurationError, ValidationError
-
-from .logging import get_logger
+from astmio.plugins.logging import get_logger
 
 # Assume these are imported from your project structure
 from .models import FrameConfig, SerialConfig, TCPConfig, UDPConfig

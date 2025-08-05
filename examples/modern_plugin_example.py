@@ -22,8 +22,8 @@ from astmio.constants import ENCODING, RECORD_SEP
 from astmio.decoder import decode_frame
 from astmio.exceptions import BaseASTMError, NotAccepted, ValidationError
 from astmio.io import load_profile_from_file
-from astmio.logging import get_logger
 from astmio.plugins import PluginManager, install_plugin
+from astmio.plugins.logging import get_logger
 from astmio.profile import DeviceProfile
 
 log = get_logger(__name__)

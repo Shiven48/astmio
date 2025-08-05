@@ -4,7 +4,7 @@ from typing import Any, Callable, Dict, List, Optional, Union
 from astmio.enums import SerializationFormat
 from astmio.exceptions import ValidationError
 from astmio.io import from_file
-from astmio.logging import get_logger
+from astmio.plugins.logging import get_logger
 from astmio.profile import DeviceProfile
 
 log = get_logger(__name__)
