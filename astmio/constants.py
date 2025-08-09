@@ -38,3 +38,17 @@ REPEAT_SEP = b"\x5c"  # \  #
 COMPONENT_SEP = b"\x5e"  # ^  #
 #: Date escape token.
 ESCAPE_SEP = b"\x26"  # &  #
+# Valid astm record types
+DEFAULT_VALID_RECORD_TYPES = {
+    b"H",
+    b"P",
+    b"O",
+    b"R",
+    b"L",
+    b"Q",
+    b"M",
+    b"S",
+    b"C",
+}
+# legal range for an astm frame number if range > 7 wrap around and start with 1
+DEFAULT_FRAME_RANGE = range(1, 8)

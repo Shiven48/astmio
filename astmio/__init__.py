@@ -10,7 +10,7 @@ import logging as stdlib_logging
 from typing import Any, Callable, Dict, List, Optional
 
 from astmio.dataclasses import ConnectionStatus, MessageMetrics
-from astmio.enums import ErrorCode, RecordType
+from astmio.enums import ErrorCode, MessageType, RecordType
 from astmio.exceptions import (
     ConfigurationError,
     ProtocolError,
@@ -21,7 +21,6 @@ from astmio.plugins.logging.logger import StructlogPlugin
 from astmio.profile import DeviceProfile
 from astmio.server import Server, ServerConfig, astm_server
 from astmio.server import create_server as _create_server
-from astmio.types import MessageType
 
 # Core functionality
 from .client import Client, ClientConfig, astm_client

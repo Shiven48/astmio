@@ -173,19 +173,6 @@ def join(chunks: Iterable[bytes], strict: bool = False) -> bytes:
         return b""
 
 
-def is_chunked_message(message: bytes) -> bool:
-    """
-    Checks if a message is a chunked message.
-
-    :param message: An ASTM message.
-    :return: True if the message is chunked, False otherwise.
-    """
-    if len(message) < 5:
-        return False
-    # Check for ETB at the expected position for a chunked message
-    return message.rfind(ETB) == len(message) - 5
-
-
 def parse_astm_datetime(value: str, format_str: str) -> datetime:
     """Parses a string into a datetime object using a specific format."""
     if not isinstance(value, str):

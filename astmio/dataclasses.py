@@ -8,9 +8,8 @@ from typing import Any, Dict, List, Optional, Union
 from pydantic import BaseModel, Field, computed_field, model_validator
 
 from astmio.constants import ENCODING
+from astmio.enums import ConnectionState, MessageType
 from astmio.plugins.logging import get_logger
-
-from .enums import ConnectionState, MessageType
 
 log = get_logger(__name__)
 
@@ -246,7 +245,8 @@ class PerformanceMetrics(BaseModel):
         )
 
 
-ASTMRecord = List[Union[str, List[Any], None]]
+ASTMFIELD = Union[str, List[Any], None]
+ASTMRecord = List[ASTMFIELD]
 ASTMData = List[ASTMRecord]
 
 
