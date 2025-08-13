@@ -7,13 +7,7 @@
 #
 from typing import Any, Iterator, List, Optional, Tuple, Union
 
-from astmio.dataclasses import DecodingResult, MessageType
-from astmio.enums import ErrorCode
-from astmio.exceptions import ProtocolError, ValidationError
-from astmio.plugins.logging import get_logger
-from astmio.utils import is_chunked_message, make_checksum
-
-from .constants import (
+from astmio.constants import (
     COMPONENT_SEP,
     CRLF,
     ENCODING,
@@ -24,12 +18,15 @@ from .constants import (
     REPEAT_SEP,
     STX,
 )
+from astmio.dataclasses import DecodingResult, MessageType
+from astmio.enums import ErrorCode
+from astmio.exceptions import ProtocolError, ValidationError
+from astmio.plugins.logging import get_logger
+from astmio.utils import make_checksum
 
 log = get_logger(__name__)
 
-# Type aliases
 ASTMRecord = List[Union[str, List[Any], None]]
-
 ASTM_Message = List[ASTMRecord]
 
 # Will be used in where field contains escape value[|,^, &,\]
@@ -65,7 +62,6 @@ def decode_stream(
             continue
 
 
-# It will be used if user wants only data
 def decode(
     data: bytes, encoding: str = ENCODING, strict: bool = False
 ) -> ASTM_Message:
@@ -86,7 +82,6 @@ def decode(
         raise e
 
 
-# It will be used if user wants data + metadata
 def decode_with_metadata(
     data: bytes, encoding: str = ENCODING, strict: bool = True
 ) -> "DecodingResult":
@@ -100,9 +95,8 @@ def decode_with_metadata(
     """
     if not isinstance(data, bytes):
         raise ValidationError(
-            f"bytes expected, got {type(data).__name__}",
-            code=ErrorCode.PROTOCOL_VIOLATION,
-            details={"expected": "bytes", "got": type(data).__name__},
+            message=f"bytes expected, got {type(data).__name__}",
+            constraint={"expected": "bytes", "got": type(data).__name__},
         )
 
     if not data:
@@ -122,9 +116,50 @@ def decode_with_metadata(
     elif data and data[:1].isdigit():
         return _decode_frame_only(data, encoding, strict)
 
-    # The message contains only record(No sequence number and STX)
-    else:
+    elif is_valid_record(data):
         return _decode_record_only(data, encoding, strict)
+
+    else:
+        raise ProtocolError(
+            message=f"Invalid protocol: unknown message format, starts with {data[:1]!r}",
+        )
+
+
+def is_chunked_message(message: bytes) -> bool:
+    """
+    Checks if a message is a chunked message.
+
+    :param message: An ASTM message.
+    :return: True if the message is chunked, False otherwise.
+    """
+    if len(message) < 5:
+        return False
+    return message.rfind(ETB) == len(message) - 5
+
+
+def is_valid_record(data: bytes) -> bool:
+    """
+    Checks if the given byte sequence represents a valid ASTM record.
+    ASTM records typically start with an uppercase ASCII letter denoting the record type (e.g. H, P, O, R, etc.).
+    :param data: The input bytes.
+    :return: True if the data looks like a valid ASTM record, False otherwise.
+    """
+    if not data or len(data) < 2:
+        return False
+
+    RECORD_TYPES = {b"H", b"P", b"O", b"R", b"C", b"L", b"Q", b"S"}
+
+    first_byte = data[:1]
+
+    # Must start with record type, next character is usually a delimiter
+    if first_byte in RECORD_TYPES and (data[1:2] == b"|"):
+        return True
+
+    # matching ASCII printable range, no control chars
+    if first_byte in RECORD_TYPES and 32 <= data[1] <= 126:
+        return True
+
+    return False
 
 
 def _decode_chunked_message(
@@ -182,9 +217,6 @@ def _decode_record_only(
     return DecodingResult(data=[record], message_type=MessageType.RECORD_ONLY)
 
 
-# In astmio/codec.py
-
-
 def decode_message(
     message: bytes, encoding: str, strict: bool = False
 ) -> Tuple[Optional[int], ASTM_Message, Optional[str]]:
@@ -209,8 +241,8 @@ def decode_message(
 
         payload = message[1:-4]
         received_checksum = message[-4:-2]
-
         end_of_frame_char = payload[-1:]
+
         if end_of_frame_char not in (ETX, ETB):
             raise ProtocolError(
                 f"Expected ETX or ETB before checksum, but found {end_of_frame_char!r}"
@@ -222,7 +254,6 @@ def decode_message(
         )
 
     calculated_checksum = make_checksum(payload)
-
     if received_checksum != calculated_checksum:
         error_msg = f"Checksum failure: expected {received_checksum.decode(errors='ignore')!r}, calculated {calculated_checksum.decode(errors='ignore')!r}."
         from .exceptions import ChecksumError
@@ -230,9 +261,7 @@ def decode_message(
         raise ChecksumError(message=error_msg)
 
     frame_content = payload[1:-1]
-
     seq, records = decode_frame(frame_content, encoding, strict=False)
-
     return seq, records, received_checksum.decode(encoding, "replace")
 
 
@@ -389,7 +418,6 @@ def decode_record(
             if strict:
                 raise ValidationError(
                     f"Failed to decode field {i} in record",
-                    code=ErrorCode.FIELD_DECODE_ERROR,
                     details=error_details,
                 )
             log.warning(

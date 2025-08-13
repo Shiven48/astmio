@@ -31,7 +31,7 @@ class DeviceProfile(BaseModel):
     profile YAML file. This is the single entry point for configuration loading.
     """
 
-    device: str
+    device: str = "Mindry_BS-240"
     vendor: Optional[str] = None
     model: Optional[str] = None
     protocol: str = "ASTM E1394"
@@ -45,6 +45,7 @@ class DeviceProfile(BaseModel):
         default_factory=dict
     )
 
+    parser: Dict[str, Any] = {}
     quirks: Dict[str, Any] = {}
     custom_extensions: Dict[str, Any] = {}
 

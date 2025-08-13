@@ -221,6 +221,7 @@ class RecordConfig(BaseModel):
     fields: List[DiscriminatedField] = []
     validation_rules: Dict[str, Any] = {}
     custom_parser: Optional[str] = None
+    ignored_fields_index: List[int] = []
 
     @field_validator("fields", mode="before")
     @classmethod
@@ -232,14 +233,14 @@ class RecordConfig(BaseModel):
         1. Renames the 'type' key from YAML to 'field_type' for our discriminator.
         2. Injects the astm_position based on list order.
         """
-        for i, field in enumerate(fields_data):
-            if isinstance(field, dict):
-                if "type" in field:
-                    field["field_type"] = field.pop("type")
+        for i, field_config in enumerate(fields_data):
+            if isinstance(field_config, dict):
+                if "type" in field_config:
+                    field_config["field_type"] = field_config.pop("type")
 
                 # Logic from your existing validator to set position
-                if "astm_position" not in field:
-                    field["astm_position"] = i + 1
+                if "astm_position" not in field_config:
+                    field_config["astm_position"] = i + 1
         return fields_data
 
     @model_validator(mode="after")
@@ -249,7 +250,7 @@ class RecordConfig(BaseModel):
         entire list of fields after they have all been individually parsed.
         """
         # Check for duplicate field names within this record
-        names = [field.field_name for field in self.fields]
+        names: List[str] = [field.field_name for field in self.fields]
         if len(names) != len(set(names)):
             seen = set()
             duplicates = {n for n in names if n in seen or seen.add(n)}

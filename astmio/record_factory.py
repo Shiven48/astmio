@@ -1,6 +1,6 @@
 from datetime import datetime
 from decimal import Decimal
-from typing import Annotated, Any, Dict, List, Type
+from typing import Annotated, Any, Dict, List, Optional, Type, Union
 
 from pydantic import (
     BeforeValidator,
@@ -47,15 +47,13 @@ class RecordFactory:
             log.debug(f"Returning cached record class for '{record_type}'.")
             return _record_class_cache[cache_key]
 
-        # If not in cache, call the internal implementation to build it.
-        log.debug(f"Cache miss for '{record_type}'. Creating new record class.")
         new_class = RecordFactory._create_record_class_impl(record_type, config)
         _record_class_cache[cache_key] = new_class
         return new_class
 
     @staticmethod
     def _create_record_class_impl(
-        record_type: str, config: RecordConfig
+        record_type: str, config: Union[RecordConfig, ComponentField]
     ) -> Type[ASTMBaseRecord]:
         """
         Internal implementation of the record class creation logic.
@@ -71,7 +69,7 @@ class RecordFactory:
         elif isinstance(config, ComponentField):
             sub_fields = config.component_fields
 
-        for field_config in sub_fields:
+        for idx, field_config in enumerate(sub_fields):
             field_name = field_config.field_name
 
             # Populate metadata
@@ -79,7 +77,9 @@ class RecordFactory:
             metadata.name_to_position[field_name] = field_config.astm_position
             metadata.field_types[field_name] = field_config.field_type
 
+            # Populate ignored_fields_index
             if isinstance(field_config, IgnoredField):
+                config.ignored_fields_index.append(idx)
                 continue
 
             if field_config.required:
@@ -95,30 +95,35 @@ class RecordFactory:
             class_name, __base__=ASTMBaseRecord, **fields
         )
         dynamic_class._astm_metadata = metadata
-        log.debug(f"Successfully created dynamic record class '{class_name}'.")
+        # log.debug(f"Successfully created dynamic record class '{class_name}'.")
         return dynamic_class
 
     @staticmethod
     def _get_pydantic_type_and_args(
         field: RecordFieldMapping,
     ) -> tuple[Type, Dict[str, Any]]:
-        pydantic_type: Type = str
-        field_args: Dict[str, Any] = {"default": None}
+        """
+        Implement the new validation rules.
+        """
+        base_type: Type = str
+        field_args: Dict[str, Any] = {}
 
-        # Determine base type based on the validated config model
         if isinstance(field, IntegerField):
-            pydantic_type = int
+            base_type = int
         elif isinstance(field, DecimalField):
-            pydantic_type = Decimal
+            base_type = Decimal
         elif isinstance(field, DateTimeField):
 
-            def parse_datetime_with_format(value: Any) -> datetime:
-                if isinstance(value, datetime):
+            def parse_datetime_with_format(value: Any) -> Optional[datetime]:
+                if value is None or isinstance(value, datetime):
                     return value
                 if not isinstance(value, str):
                     raise ValueError("datetime field must be a string to parse")
 
                 cleaned_value = value.strip()
+                if not cleaned_value:
+                    return None
+
                 try:
                     return datetime.strptime(cleaned_value, field.format)
                 except ValueError:
@@ -126,28 +131,36 @@ class RecordFactory:
                         f"Value '{value}' does not match format '{field.format}'"
                     )
 
-            pydantic_type = Annotated[
+            base_type = Annotated[
                 datetime, BeforeValidator(parse_datetime_with_format)
             ]
         elif isinstance(field, ComponentField):
             component_class_name = (
                 f"{field.field_name.title().replace('_', '')}Component"
             )
-            pydantic_type = RecordFactory.create_record_class(
+            base_type = RecordFactory.create_record_class(
                 component_class_name, field
             )
 
-        # Handle optionality and defaults
-        if field.required and field.default_value is None:
+        # All fields can be None, so the base type in Optional.
+        pydantic_type = Optional[base_type]
+
+        # Set the default based on whether the field is `required`.
+        if field.required:
             field_args["default"] = ...
+        else:
+            field_args["default"] = None
+
+        # A specific default value from the config overrides the general rule.
         if field.default_value is not None:
             field_args["default"] = field.default_value
 
         # Handle repeated fields
         if field.repeated:
             pydantic_type = List[pydantic_type]
-            if "default" not in field_args or field_args["default"] is None:
-                field_args["default_factory"] = list
+            if "default" in field_args:
+                del field_args["default"]
+            field_args["default_factory"] = list
 
         if field.max_length:
             if isinstance(field, StringField):

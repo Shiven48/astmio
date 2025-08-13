@@ -20,10 +20,10 @@ from .constants import (
     REPEAT_SEP,
     STX,
 )
+from .dataclasses import ASTMRecord, EncodingOptions
 from .decoder import decode_message
 from .enums import ErrorCode
 from .exceptions import ProtocolError, ValidationError
-from .types import ASTMRecord, EncodingOptions
 from .utils import make_checksum, split
 
 log = logging.getLogger(__name__)

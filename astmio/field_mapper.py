@@ -164,6 +164,7 @@ class ComponentField(RecordFieldMapping):
 
     field_type: Literal["component"] = "component"
     component_fields: List["DiscriminatedField"] = Field(..., alias="fields")
+    ignored_fields_index: List[int] = []
 
     @field_validator("component_fields", mode="before")
     @classmethod

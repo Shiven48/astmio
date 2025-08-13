@@ -7,10 +7,10 @@ from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from typing import Callable, Dict, List, Optional
 
+from astmio.dataclasses import DecodingResult
 from astmio.decoder import decode_with_metadata
 from astmio.exceptions import ChecksumError, ProtocolError, ValidationError
 from astmio.plugins.logging import get_logger, setup_logging
-from astmio.types import DecodingResult
 
 from .constants import ACK, ENQ, EOT, ETB, ETX, NAK, STX
 from .plugins import BasePlugin, PluginManager
