@@ -1,28 +1,27 @@
-.PHONY: format lint test install-dev clean pre-commit-install
+.PHONY: format lint lint-fix test install-dev clean pre-commit-install all
 
-install-dev:
-	pip install -e ".[dev]"
+install:
+	uv sync --extra dev
 
 pre-commit-install:
-	pre-commit install
+	uv run pre-commit install
 
 format:
-	black astmio tests
-	ruff format astmio tests
+	uv run black astmio tests
+	uv run ruff format astmio tests
 
 lint:
-	ruff check astmio tests
+	uv run ruff check astmio tests
 
 lint-fix:
-	ruff check --fix astmio tests
+	uv run ruff check --fix astmio tests
 
 test:
-	pytest tests/
+	uv run pytest tests/
 
 clean:
-	rm -rf build/
-	rm -rf dist/
-	rm -rf *.egg-info/
+	rm -rf build/ dist/ *.egg-info/
+	rm -rf .venv .uv_cache .pytest_cache .ruff_cache
 	find . -type d -name __pycache__ -exec rm -rf {} +
 	find . -type f -name "*.pyc" -delete
 

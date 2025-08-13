@@ -45,6 +45,7 @@ metrics = ["prometheus-client>=0.17.0"]
 prometheus = ["prometheus-client>=0.17.0"]
 security = ["cryptography>=41.0.0"]
 full = ["dataset>=1.6.2", "prometheus-client>=0.17.0", "cryptography>=41.0.0"]
+docs = ["furo", "sphinx", "sphinx-autobuild"]
 
 [tool.black]
 line-length = 80
