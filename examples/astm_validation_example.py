@@ -15,6 +15,7 @@ from dataclasses import dataclass
 from typing import List
 
 from astmio.constants import ENCODING, RECORD_SEP
+from astmio.dataclasses import ASTMRecord
 from astmio.decoder import decode_frame
 from astmio.exceptions import BaseASTMError, NotAccepted
 
@@ -27,7 +28,6 @@ from astmio.plugins.logging import get_logger
 
 # Import the core models needed for type hinting and functionality
 from astmio.profile import DeviceProfile
-from astmio.types import ASTMRecord
 
 log = get_logger(__name__)
 
