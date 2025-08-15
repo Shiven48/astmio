@@ -271,6 +271,53 @@ class EncodingOptions(BaseModel):
     include_metadata: bool = False
 
 
+class ParsedValidationResult(BaseModel):
+    """Holds the complete outcome of validation pipeline execution."""
+
+    is_valid: bool = Field(
+        default=True,
+        description="Whether validation passed without critical errors",
+    )
+    errors: List[str] = Field(
+        default_factory=list, description="List of critical error messages"
+    )
+    warnings: List[str] = Field(
+        default_factory=list, description="List of warning messages"
+    )
+    failed_rules: List[str] = Field(
+        default_factory=list, description="Names of rules that failed"
+    )
+
+    def add_error(self, rule_name: str, message: str) -> None:
+        """Add a critical error that invalidates the entire result."""
+        self.is_valid = False
+        self.errors.append(message)
+        self.failed_rules.append(rule_name)
+
+    def add_warning(self, rule_name: str, message: str) -> None:
+        """Add a warning that doesn't invalidate the result."""
+        self.warnings.append(message)
+        self.failed_rules.append(rule_name)
+
+    def has_errors(self) -> bool:
+        """Check if there are any critical errors."""
+        return not self.is_valid
+
+    def has_warnings(self) -> bool:
+        """Check if there are any warnings."""
+        return len(self.warnings) > 0
+
+    # @property
+    # def summary(self) -> str:
+    #     """Get a concise summary of validation results."""
+    #     if self.has_errors():
+    #         return f"FAILED: {len(self.errors)} errors, {len(self.warnings)} warnings"
+    #     elif self.has_warnings():
+    #         return f"PASSED: {len(self.warnings)} warnings"
+    #     else:
+    #         return "PASSED: No issues found"
+
+
 __all__ = [
     "ConnectionStatus",
     "MessageMetrics",
@@ -279,4 +326,5 @@ __all__ = [
     "PerformanceMetrics",
     "DecodingResult",
     "EncodingOptions",
+    "ParsedValidationResult",
 ]

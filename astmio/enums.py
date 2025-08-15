@@ -213,6 +213,13 @@ class MessageType(Enum):
     CHUNKED_MESSAGE = "chunked_message"
 
 
+class ValidationStrictness(Enum):
+    """Defines the severity level of validation rule failures."""
+
+    STRICT = "STRICT"
+    WARNING = "WARNING"
+
+
 # Export all enums
 __all__ = [
     "RecordType",
@@ -228,4 +235,5 @@ __all__ = [
     "CommunicationProtocol",
     "SerializationFormat",
     "MessageType",
+    "ValidationStrictness",
 ]
