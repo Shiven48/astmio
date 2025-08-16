@@ -12,6 +12,7 @@ log = get_logger(__name__)
 # --- Pydantic Models ---
 
 
+# Transport Specific Config models
 class BaseNetworkConfig(BaseModel):
     """Base configuration for network-based transports (TCP/UDP)."""
 
@@ -129,50 +130,6 @@ class UDPConfig(BaseNetworkConfig):
     mode: Literal["udp"] = "udp"
 
 
-class FrameConfig(BaseModel):
-    """
-    Configuration for message framing, validation, and chunking.
-    Inherits from Pydantic's BaseModel for automatic validation and parsing.
-    """
-
-    start: str = "STX"
-    end: List[str] = ["ETX", "CR", "LF"]
-    checksum: bool = True
-    max_length: int = 240
-    sequence_numbers: bool = True
-    chunking_enabled: bool = True
-    chunk_size: int = 240
-
-    @model_validator(mode="after")
-    def validate_frame_logic(self) -> "FrameConfig":
-        # Validate that max_length is a positive integer
-        if self.max_length <= 0:
-            raise ConfigurationError(
-                message="Frame 'max_length' must be a positive integer.",
-                config_key="max_length",
-                config_value=self.max_length,
-            )
-
-        # If chunking is on, validate the chunk_size
-        if self.chunking_enabled and self.chunk_size <= 0:
-            raise ConfigurationError(
-                message="When chunking is enabled, 'chunk_size' must be greater than zero.",
-                config_key="chunk_size",
-                config_value=self.chunk_size,
-            )
-
-        # Log a warning if chunk_size exceeds max_length
-        if self.chunking_enabled and self.chunk_size > self.max_length:
-            log.warning(
-                "Configuration warning: chunk_size (%s) is larger than max_length (%s). "
-                "This may result in messages that can never be sent in a single chunk.",
-                self.chunk_size,
-                self.max_length,
-            )
-
-        return self
-
-
 class ConnectionConfig(BaseModel):
     """
     Configuration for ASTM connections, implemented as a Pydantic model
@@ -282,12 +239,111 @@ class RecordConfig(BaseModel):
         return self
 
 
+# parser Specific Config models
+class ChecksumConfig(BaseModel):
+    """Configuration for checksum handling."""
+
+    has_checksums: bool = False
+    checksum_position: Optional[str] = None
+    checksum_size: Optional[int] = None
+
+    @model_validator(mode="after")
+    def validate_checksum_logic(self) -> "ChecksumConfig":
+        # If checksum is enable then checksum_position and checksum_size is must
+        if self.has_checksums:
+            if self.checksum_position is None:
+                raise ConfigurationError(
+                    message="If 'has_checksums' is true, 'checksum_position' must be specified",
+                    config_key="parser.checksum.checksum_position",
+                )
+
+            if self.checksum_size is None or self.checksum_size <= 0:
+                raise ConfigurationError(
+                    message="If 'has_checksums' is true, 'checksum_size' must be a positive integer.",
+                    config_key="parser.checksum.checksum_size",
+                )
+        else:
+            if self.checksum_position is not None:
+                log.warning(
+                    f"Configuration warning: 'checksum_position' ({self.checksum_position}) is provided but 'has_checksums' is false. This value will be ignored."
+                )
+            if self.checksum_size is not None:
+                log.warning(
+                    f"Configuration warning: 'checksum_size' ({self.checksum_size}) is provided but 'has_checksums' is false. This value will be ignored."
+                )
+        return self
+
+
+class SequenceNoConfig(BaseModel):
+    """Configuration for sequence number handling."""
+
+    has_sequence_numbers: bool = False
+    has_multiple_sequence_numbers: bool = False
+    is_chunked: bool = False
+
+    @model_validator(mode="after")
+    def validate_sequence_logic(self) -> "SequenceNoConfig":
+        if self.is_chunked and not self.has_sequence_numbers:
+            raise ConfigurationError(
+                message="If 'is_chunked' is true, 'has_sequence_numbers' must also be true.",
+                config_key="parser.sequence_no.is_chunked",
+                config_value=self.is_chunked,
+            )
+        return self
+
+
+class TerminatorConfig(BaseModel):
+    """Configuration for message terminators."""
+
+    record_termination: Literal["CR", "LF", "CRLF"] = "CR"
+    frame_termination: Literal["ETX", "ETB", "EOT"] = "ETX"
+    message_termination: Literal[
+        "CRLF", "EOT", "ETX"
+    ] = "CRLF"  # EOT is common for full message termination
+
+
+class ParserConfig(BaseModel):
+    """
+    Comprehensive configuration for the ASTM parser, derived from the YAML.
+    """
+
+    strict: bool = False
+    repeated_components: List[str] = Field(default_factory=list)
+    valid_special_chars: List[
+        Literal["STX", "ETX", "CR", "LF", "ETB", "CRLF", "EOT"]
+    ] = Field(default_factory=lambda: ["STX", "ETX", "CR", "LF", "ETB", "CRLF"])
+    checksum: ChecksumConfig = Field(default_factory=ChecksumConfig)
+    sequence_no: SequenceNoConfig = Field(default_factory=SequenceNoConfig)
+    terminator: TerminatorConfig = Field(default_factory=TerminatorConfig)
+    # delimiters: DelimitersConfig = Field(default_factory=DelimitersConfig)
+
+    @model_validator(mode="after")
+    def validate_parser_logic(self) -> "ParserConfig":
+        if (
+            self.sequence_no.has_sequence_numbers
+            and self.terminator.frame_termination not in ["ETX", "ETB"]
+        ):
+            log.warning(
+                "Configuration warning: 'has_sequence_numbers' is true, but 'frame_termination' is not ETX or ETB. "
+                "This might lead to parsing issues for multi-frame messages."
+            )
+        if self.strict and not self.checksum.has_checksums:
+            log.warning(
+                "Configuration warning: 'strict' is true, but 'there is no checksum'. "
+                "This will lead the parser to throw an error."
+            )
+        return self
+
+
 __all__ = [
     "BaseNetworkConfig",
     "SerialConfig",
     "TCPConfig",
     "UDPConfig",
-    "FrameConfig",
     "ConnectionConfig",
     "RecordConfig",
+    "ChecksumConfig",
+    "SequenceNoConfig",
+    "TerminatorConfig",
+    "ParserConfig",
 ]

@@ -3,7 +3,13 @@ from typing import Annotated, Any, Dict, Optional, Type, Union
 
 from pydantic import BaseModel, Field, PrivateAttr, field_validator
 
-from astmio.models import RecordConfig, SerialConfig, TCPConfig, UDPConfig
+from astmio.models import (
+    ParserConfig,
+    RecordConfig,
+    SerialConfig,
+    TCPConfig,
+    UDPConfig,
+)
 from astmio.modern_records import ASTMBaseRecord
 from astmio.plugins.logging import get_logger
 from astmio.record_factory import RecordFactory
@@ -45,7 +51,7 @@ class DeviceProfile(BaseModel):
         default_factory=dict
     )
 
-    parser: Dict[str, Any] = {}
+    parser: ParserConfig
     quirks: Dict[str, Any] = {}
     custom_extensions: Dict[str, Any] = {}
 
