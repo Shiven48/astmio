@@ -127,12 +127,21 @@ class OrderResultCountRule(BaseValidationRule):
         for record in records:
             if not record:
                 continue
-            if record[0] == "O":
-                order_count = len(record[4])
-            elif record[0] == "R":
-                result_count += 1
+
+        if record[0] == "O":
+            if len(record) > 4 and record:
+                test_field = record
+
+                if isinstance(test_field, list):
+                    order_count += len(test_field)
+                else:
+                    order_count += 1
+
+        # --- Result Counting Logic (no changes needed) ---
+        elif record == "R":
+            result_count += 1
 
         if order_count == result_count:
-            log.info(f"Validated structure against: {self.name}")
+            log.info(f"Validated Structure against: {self.name}")
 
         return order_count == result_count

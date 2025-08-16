@@ -655,10 +655,20 @@ records:
         max_length: 1
         required: true
 parser:
-  has_sequence_numbers: true
-  has_checksums: true
-  frame_termination: '[ETX]'
-  checksum_format: 'hex_after_etx'
   strict: False
+  repeated_components: ['O-4']
+  valid_special_chars: ['STX', 'ETX', 'CR', 'LF', 'ETB', 'CRLF']
+  checksum:
+    - has_checksums: true
+    - checksum_position: 'after-etx'
+    - checksum_size: 2
+  sequence_no:
+    - has_sequence_numbers: True
+    - chas_multiple_sequence_numbers: False
+    - is_chunked: False
+  terminator:
+    - record_termination: 'CR'
+    - frame_termination: 'ETX'
+    - message_termination: 'CRLF'
 quirks:
   quirkInfo: "handles all the medical tests naming quirks"

@@ -103,7 +103,17 @@ records:
       - sequence         # Field 1: Sequence number
       - termination_code # Field 2: Termination code (N)
 parser:
-  patient_name_field: P.5
-  sample_id_field: O.2
-  test_separator: "\\"
-  component_separator: "^"
+  strict: False
+  checksum:
+    has_checksums: False
+    checksum_position: None
+    checksum_size: None
+
+  seq_no:
+    has_sequence_numbers: False
+    has_multiple_sequence_numbers: False
+
+  termination:
+    record_termination: 'CR'
+    frame_termination: 'ETX'
+    message_termination: 'ETX'
