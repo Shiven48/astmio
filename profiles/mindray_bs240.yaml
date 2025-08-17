@@ -290,12 +290,11 @@ records:
 
       - name: sample_id_component
         type: component
-        required: true
+        required: false
         fields:
           - name: sample_id
             type: string
             max_length: 10
-            required: true
 
           - name: sample_tray_no
             type: string
@@ -666,6 +665,7 @@ parser:
     has_sequence_numbers: True
     has_multiple_sequence_numbers: False
     is_chunked: False
+    message_type: "single_frame"
   terminator:
     record_termination: 'CR'
     frame_termination: 'ETX'

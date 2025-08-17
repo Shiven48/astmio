@@ -2,6 +2,7 @@ from typing import Any, Dict, List, Literal, Optional
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
+from astmio.enums import MessageType
 from astmio.plugins.logging import get_logger
 
 from .exceptions import ConfigurationError
@@ -280,6 +281,7 @@ class SequenceNoConfig(BaseModel):
     has_sequence_numbers: bool = False
     has_multiple_sequence_numbers: bool = False
     is_chunked: bool = False
+    message_type: MessageType = MessageType.SINGLE_FRAME
 
     @model_validator(mode="after")
     def validate_sequence_logic(self) -> "SequenceNoConfig":
@@ -289,6 +291,39 @@ class SequenceNoConfig(BaseModel):
                 config_key="parser.sequence_no.is_chunked",
                 config_value=self.is_chunked,
             )
+        if self.message_type == MessageType.NO_FRAME:
+            if self.has_sequence_numbers:
+                raise ConfigurationError(
+                    message="'NO_FRAME' message type cannot have 'has_sequence_numbers' set to true.",
+                    config_key="parser.sequence_no.message_framing_type",
+                )
+            if self.has_multiple_sequence_numbers or self.is_chunked:
+                log.warning(
+                    f"Configuration warning: 'NO_FRAME' message type implies no multi-sequence or chunking. "
+                    f"has_multiple_sequence_numbers={self.has_multiple_sequence_numbers}, is_chunked={self.is_chunked} will be ignored."
+                )
+        elif self.message_type == MessageType.SINGLE_FRAME:
+            if not self.has_sequence_numbers:
+                raise ConfigurationError(
+                    message="'SINGLE_FRAME' message type implies 'has_sequence_numbers' is true.",
+                    config_key="sequence_no.message_framing_type",
+                )
+            if self.has_multiple_sequence_numbers or self.is_chunked:
+                raise ConfigurationError(
+                    message="'SINGLE_FRAME' message type cannot have 'has_multiple_sequence_numbers' or 'is_chunked' set to true.",
+                    config_key="sequence_no.message_framing_type",
+                )
+        elif self.message_type == MessageType.MULTI_FRAME:
+            if not self.has_sequence_numbers:
+                raise ConfigurationError(
+                    message="'MULTI_FRAME' message type implies 'has_sequence_numbers' is true.",
+                    config_key="sequence_no.message_framing_type",
+                )
+            if not self.has_multiple_sequence_numbers and not self.is_chunked:
+                log.warning(
+                    f"Configuration warning: 'MULTI_FRAME' message type usually implies 'has_multiple_sequence_numbers' or 'is_chunked' is true. "
+                    f"Current config: has_multiple_sequence_numbers={self.has_multiple_sequence_numbers}, is_chunked={self.is_chunked}."
+                )
         return self
 
 

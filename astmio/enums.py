@@ -207,10 +207,9 @@ class SerializationFormat(str, Enum):
 class MessageType(Enum):
     """ASTM message types for better classification."""
 
-    COMPLETE_MESSAGE = "complete_message"
-    FRAME_ONLY = "frame_only"
-    RECORD_ONLY = "record_only"
-    CHUNKED_MESSAGE = "chunked_message"
+    MULTI_FRAME = "multi_frame"
+    SINGLE_FRAME = "single_frame"
+    NO_FRAME = "no_frame"
 
 
 class ValidationStrictness(Enum):
